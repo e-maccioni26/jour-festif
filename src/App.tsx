@@ -18,7 +18,7 @@ const queryClient = new QueryClient();
 // Protected route component
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   // We'll use localStorage for simple auth check
-  const userString = localStorage.getItem('user');
+  const userString = localStorage.getItem('sb-tnadoqlzxhehlnqmihbr-auth-token');
   
   if (!userString) {
     // Redirect to login if not authenticated

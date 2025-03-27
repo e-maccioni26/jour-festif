@@ -127,7 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: profile.id,
           name: profile.name,
           email: profile.email,
-          role: profile.role,
+          role: profile.role || 'employee', // Valeur par défaut 'employee' si role est null
           storeId: profile.store_id,
           store: profile.store ? {
             id: profile.store.id,
