@@ -56,40 +56,29 @@ export const AuthForm: React.FC = () => {
           return;
         }
 
-        // Inscription simplifiée en utilisant le SDK Supabase
+        // Inscription avec des métadonnées de base
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
-              name,
-              role: "employee" // Utiliser une chaîne normale au lieu d'un enum
+              name: name,
+              // Utilisez la chaîne directement, sans conversion d'enum
+              role: "employee"
             }
           }
         });
 
         if (error) {
-          // Si l'erreur persiste avec l'inscription normale, essayez une inscription simplifiée
-          if (error.message.includes("Database error saving new user")) {
-            // Créer uniquement un utilisateur auth sans métadonnées personnalisées
-            const { data: simpleData, error: simpleError } = await supabase.auth.signUp({
-              email,
-              password
-            });
-            
-            if (simpleError) {
-              throw simpleError;
-            } else {
-              toast({
-                title: "Inscription réussie (mode simplifié)",
-                description: "Votre compte a été créé. Vous pouvez maintenant vous connecter.",
-              });
-              setIsSigningUp(false);
-            }
-          } else {
-            throw error;
-          }
+          // Si l'inscription échoue, afficher l'erreur
+          console.error("Erreur d'inscription:", error);
+          toast({
+            title: "Échec de l'inscription",
+            description: error.message || "Une erreur s'est produite lors de l'inscription.",
+            variant: "destructive"
+          });
         } else {
+          // Inscription réussie
           toast({
             title: "Inscription réussie",
             description: "Votre compte a été créé. Vous pouvez maintenant vous connecter.",
