@@ -48,7 +48,7 @@ const MOCK_STORES: Store[] = [
 
 // Données mockées pour les utilisateurs en cas d'erreur
 const MOCK_USERS = [
-  { id: '1', name: 'Admin', email: 'admin@example.com', role: 'admin' as const },
+  { id: '1', name: 'Admin', email: 'admin@example.com', role: 'admin' as const, storeId: undefined },
   { id: '2', name: 'Paris Manager', email: 'paris@example.com', role: 'manager' as const, storeId: '1' },
   { id: '3', name: 'Lyon Manager', email: 'lyon@example.com', role: 'manager' as const, storeId: '2' },
   { id: '4', name: 'Employee 1', email: 'emp1@example.com', role: 'employee' as const, storeId: '1' },
@@ -77,7 +77,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: userId,
           name: data.user.email.split('@')[0],
           email: data.user.email,
-          role: 'employee' as const
+          role: 'employee' as const,
+          storeId: '1' // Assigner par défaut au magasin Malakoff
         };
         
         setUser({
