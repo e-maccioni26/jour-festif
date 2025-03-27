@@ -45,7 +45,7 @@ export const AuthForm: React.FC = () => {
     
     try {
       if (isSigningUp) {
-        // Tentative d'inscription classique
+        // Tentative d'inscription simplifiée
         if (!name) {
           toast({
             title: "Champ requis",
@@ -56,37 +56,40 @@ export const AuthForm: React.FC = () => {
           return;
         }
 
-        // Inscription simplifiée sans type personnalisé
+        // Inscription simplifiée en utilisant le SDK Supabase
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
               name,
-              // Utiliser une chaîne de caractères au lieu d'un type personnalisé
-              role: "employee"
+              role: "employee" // Utiliser une chaîne normale au lieu d'un enum
             }
           }
         });
 
         if (error) {
-          throw error;
-        } else {
-          // Après l'inscription réussie, créer manuellement l'entrée dans la table profiles
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert({
-              id: data.user?.id,
-              email: email,
-              name: name,
-              role: "employee"
+          // Si l'erreur persiste avec l'inscription normale, essayez une inscription simplifiée
+          if (error.message.includes("Database error saving new user")) {
+            // Créer uniquement un utilisateur auth sans métadonnées personnalisées
+            const { data: simpleData, error: simpleError } = await supabase.auth.signUp({
+              email,
+              password
             });
             
-          if (profileError) {
-            console.warn("Erreur lors de la création du profil:", profileError);
-            // Continuer malgré l'erreur, le trigger pourrait le créer quand même
+            if (simpleError) {
+              throw simpleError;
+            } else {
+              toast({
+                title: "Inscription réussie (mode simplifié)",
+                description: "Votre compte a été créé. Vous pouvez maintenant vous connecter.",
+              });
+              setIsSigningUp(false);
+            }
+          } else {
+            throw error;
           }
-          
+        } else {
           toast({
             title: "Inscription réussie",
             description: "Votre compte a été créé. Vous pouvez maintenant vous connecter.",

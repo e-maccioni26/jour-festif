@@ -17,7 +17,7 @@ const queryClient = new QueryClient();
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  // We'll use localStorage for simple auth check
+  // We'll use localStorage for simple auth check for now to avoid Supabase errors
   const userString = localStorage.getItem('sb-tnadoqlzxhehlnqmihbr-auth-token');
   
   if (!userString) {
