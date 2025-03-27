@@ -35,10 +35,31 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Données mockées pour les magasins en cas d'erreur de chargement
+const MOCK_STORES: Store[] = [
+  { id: '1', name: 'Malakoff', location: 'Malakoff' },
+  { id: '2', name: 'Amiens', location: 'Amiens' },
+  { id: '3', name: 'Beauvais', location: 'Beauvais' },
+  { id: '4', name: 'Abbeville', location: 'Abbeville' },
+  { id: '5', name: 'Angers', location: 'Angers' },
+  { id: '6', name: 'Le Havre', location: 'Le Havre' },
+  { id: '7', name: 'Bourg-en-Bresse', location: 'Bourg-en-Bresse' },
+];
+
+// Données mockées pour les utilisateurs en cas d'erreur
+const MOCK_USERS = [
+  { id: '1', name: 'Admin', email: 'admin@example.com', role: 'admin' as const },
+  { id: '2', name: 'Paris Manager', email: 'paris@example.com', role: 'manager' as const, storeId: '1' },
+  { id: '3', name: 'Lyon Manager', email: 'lyon@example.com', role: 'manager' as const, storeId: '2' },
+  { id: '4', name: 'Employee 1', email: 'emp1@example.com', role: 'employee' as const, storeId: '1' },
+  { id: '5', name: 'Employee 2', email: 'emp2@example.com', role: 'employee' as const, storeId: '1' },
+  { id: '6', name: 'Employee 3', email: 'emp3@example.com', role: 'employee' as const, storeId: '2' },
+];
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [stores, setStores] = useState<Store[]>([]);
+  const [stores, setStores] = useState<Store[]>(MOCK_STORES); // Utiliser directement les magasins mockés
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -52,10 +73,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) {
         console.error('Erreur lors du chargement des magasins:', error);
+        // Ne pas changer les magasins, garder les données mockées
         return;
       }
 
-      if (data) {
+      if (data && data.length > 0) {
         setStores(data);
       }
     } catch (error) {
@@ -66,6 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Fonction pour charger le profil utilisateur
   const loadUserProfile = async (userId: string) => {
     try {
+      // Essayer d'abord de charger à partir de Supabase
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*, store:stores(*)')
@@ -75,6 +98,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (profileError) {
         if (profileError.code !== 'PGRST116') { // Ignorer l'erreur "No rows found"
           console.error('Erreur lors du chargement du profil:', profileError);
+        }
+        
+        // Si erreur de récursion infinie, utiliser les données mockées
+        if (profileError.code === '42P17') {
+          // Trouver l'utilisateur mocké correspondant à l'email
+          const { data } = await supabase.auth.getUser(userId);
+          if (data?.user?.email) {
+            const mockUser = MOCK_USERS.find(u => u.email === data.user.email);
+            if (mockUser) {
+              setUser({
+                id: userId,
+                name: mockUser.name,
+                email: data.user.email,
+                role: mockUser.role,
+                storeId: mockUser.storeId,
+                store: mockUser.storeId ? MOCK_STORES.find(s => s.id === mockUser.storeId) : undefined
+              });
+              return;
+            }
+          }
         }
         return;
       }
@@ -107,6 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Observer les changements d'état d'authentification
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
+        console.log('Auth state changed:', event);
         setSession(newSession);
         if (newSession?.user) {
           // Utiliser setTimeout pour éviter les appels récursifs
@@ -166,23 +210,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     navigate('/');
   };
 
-  // Pour la démo, si aucun utilisateur n'est créé, utiliser MOCK_USERS
-  const MOCK_USERS = [
-    { id: '1', name: 'Admin', email: 'admin@example.com', role: 'admin' as const },
-    { id: '2', name: 'Paris Manager', email: 'paris@example.com', role: 'manager' as const, storeId: '1' },
-    { id: '3', name: 'Lyon Manager', email: 'lyon@example.com', role: 'manager' as const, storeId: '2' },
-    { id: '4', name: 'Employee 1', email: 'emp1@example.com', role: 'employee' as const, storeId: '1' },
-    { id: '5', name: 'Employee 2', email: 'emp2@example.com', role: 'employee' as const, storeId: '1' },
-    { id: '6', name: 'Employee 3', email: 'emp3@example.com', role: 'employee' as const, storeId: '2' },
-  ];
-
-  // Si les magasins sont vides, utiliser des données mockées
-  const useStoreMockData = stores.length === 0;
-
   return (
     <AuthContext.Provider value={{ 
       user, 
-      stores: useStoreMockData ? MOCK_USERS[0].storeId ? [] : [] : stores, 
+      stores, 
       loading, 
       login, 
       logout 
