@@ -45,7 +45,6 @@ export const AuthForm: React.FC = () => {
     
     try {
       if (isSigningUp) {
-        // Tentative d'inscription simplifiée
         if (!name) {
           toast({
             title: "Champ requis",
@@ -56,21 +55,13 @@ export const AuthForm: React.FC = () => {
           return;
         }
 
-        // Inscription avec des métadonnées de base
-        const { data, error } = await supabase.auth.signUp({
+        // Version ultra simplifiée de l'inscription pour éviter les erreurs
+        const { error } = await supabase.auth.signUp({
           email,
-          password,
-          options: {
-            data: {
-              name: name,
-              // Utilisez la chaîne directement, sans conversion d'enum
-              role: "employee"
-            }
-          }
+          password
         });
 
         if (error) {
-          // Si l'inscription échoue, afficher l'erreur
           console.error("Erreur d'inscription:", error);
           toast({
             title: "Échec de l'inscription",
